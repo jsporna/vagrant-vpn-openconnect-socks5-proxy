@@ -1,0 +1,24 @@
+#! /bin/bash
+
+PASSWORD={{ vpn_password }}
+
+echo "${PASSWORD}" | sudo openconnect -b --protocol={{ vpn_protocol }} -u {{ vpn_user }} --passwd-on-stdin {{ vpn_gateway }} &
+
+sleep 1
+c=0
+while true; do
+  TUN0=$(ip a sh dev tun0 2>&1 | head -n 1)
+  if [[ "${TUN0}" != "Device \"tun0\" does not exist." ]]; then
+    echo "tun0 is up. Reseting dante-server..."
+    sudo systemctl restart danted
+    break
+  else
+    echo "Waiting for tun0..."
+    if [ $c -eq 120 ]; then
+      break
+    fi
+    c=$((c+1))
+    sleep 1
+  fi
+done
+
